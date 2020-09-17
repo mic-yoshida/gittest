@@ -1,0 +1,116 @@
+# 標準出力リストの作成
+	def ShowSensorData_List(self):
+		DataList = list()
+
+		# 辞書のキーを取得する
+		__KeyList = self.ReadDict.keys()
+
+		# コンソールをクリアする
+		#print( '%c[2J%c[H' % (27, 27) )
+		if os.name == 'nt':
+			os.system('cls')
+		elif os.name == 'posix':
+			os.system('clear')
+
+		# キーごとに出力を変える
+		for keys in __KeyList:
+			# 出力する文字列を入れる変数の初期化
+			__PrintStr = ''
+			# 要素を入れる
+			__Element = self.ReadDict[keys]
+
+			# 到来時間
+			if keys == 'ArriveTime':
+				__PrintStr = '%04d/%02d/%02d %02d:%02d:%02d.%03d' % ( __Element.year,
+																	  __Element.month,
+																	  __Element.day,
+																	  __Element.hour,
+																	  __Element.minute,
+																	  __Element.second,
+																	  __Element.microsecond/1000)
+
+			# SID
+			elif keys.find('SID') >= 0:
+				# 要素の中身が0x80000000の場合、中継していないのでその旨を出力する
+				if __Element == '80000000':
+					__PrintStr = 'No Relay'
+				# 最上位ビットが不要なため消す
+				else:
+					__PrintStr = __Element[1:len(self.ReadDict[keys])]
+
+			# LQI
+			elif keys == 'LQI':
+				__dbm = (7.0 * __Element - 1970.0) / 20.0
+				__PrintStr = str(__Element)
+
+			# センサー
+			elif keys == 'Sensor':
+				__PrintStr = self.GetSensorName()
+
+			# センサー
+			elif keys == 'SensorBitmap':
+				__PrintStr = '0x%04X' % __Element
+
+			elif keys == 'Interrupt':
+				__PrintStr = '0x%04X' % __Element
+
+			# 電源電圧 or ADC
+			elif keys == 'Power' or keys.find('ADC') >= 0:
+				__PrintStr = str(__Element)
+
+			# 温度
+			elif keys == 'Temperature':
+				__PrintStr = '%.02f' % __Element
+
+			# 湿度
+			elif keys == 'Humidity':
+				__PrintStr = '%.02f' % __Element
+
+			# 気圧
+			elif keys == 'Pressure':
+				__PrintStr = str(__Element)
+
+			# 加速度
+			elif keys.find('Acceleration') >= 0:
+				if isinstance( __Element, list ):
+					for data in __Element:
+						__PrintStr += '%.03f\t' % data
+				else:
+					__PrintStr = '%.03f' % __Element
+
+			# 角度
+			elif keys == 'Degree':
+				__PrintStr = str(__Element)
+
+			# ジャイロの角速度
+			elif keys == 'Roll' or keys == 'Pitch' or keys == 'Yaw':
+				__PrintStr = str(__Element)
+
+			# 照度
+			elif keys == 'Illuminance':
+				__PrintStr = str(__Element)
+
+			# センサごとのモード
+			elif keys == 'Mode':
+				__PrintStr = self.GetModeName(self.ReadDict['Sensor'], __Element )
+
+			elif keys == 'HALLIC':
+				if (__Element&0x7F) == 0:
+					__PrintStr = 'Open'
+				elif __Element&0x7F == 1:
+					__PrintStr = 'Close(N)'
+				elif __Element&0x7F == 2:
+					__PrintStr = 'Close(S)'
+				else:
+					__PrintStr = 'Unknown'
+
+			# 出力用の文字列に中身が入っている場合はそちらを出力する
+			if __PrintStr != '':
+				#print( keys + ' : ' + __PrintStr )
+				DataList.append(__PrintStr)
+			# 出力用の文字列に何も入っていない場合はそのまま出力する
+			else:
+				#print( keys + ' : ' + str(__Element) )
+				DataList.append(__Element)
+
+		return DataList
